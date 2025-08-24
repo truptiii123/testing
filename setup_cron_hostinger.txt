@@ -1,0 +1,132 @@
+# Auto Checkout System Setup Instructions for Hostinger
+
+## Step 1: Import Database
+
+1. **Login to phpMyAdmin** in your Hostinger control panel
+2. **Select your database**
+3. **Go to Import tab**
+4. **Choose the file**: `database/hostinger_auto_checkout.sql`
+5. **Click Go** to import
+
+## Step 2: Setup Cron Job in Hostinger
+
+### Method 1: Using Hostinger Control Panel (Recommended)
+
+1. **Login to Hostinger Control Panel**
+2. **Go to Advanced → Cron Jobs**
+3. **Click "Create Cron Job"**
+4. **Set the following:**
+   - **Minute**: 0
+   - **Hour**: 10
+   - **Day**: *
+   - **Month**: *
+   - **Weekday**: *
+   - **Command**: 
+     ```
+     /usr/bin/php /home/u123456789/domains/yourdomain.com/public_html/includes/auto_checkout_cron.php
+     ```
+   
+   **Important**: Replace the path with your actual hosting path:
+   - Replace `u123456789` with your actual hosting username
+   - Replace `yourdomain.com` with your actual domain name
+
+### Method 2: Find Your Correct Path
+
+1. **Create a test file** `path_finder.php` in your root directory:
+   ```php
+   <?php
+   echo "Full path: " . __DIR__ . "\n";
+   echo "Document root: " . $_SERVER['DOCUMENT_ROOT'] . "\n";
+   ?>
+   ```
+
+2. **Visit the file** in your browser: `http://yourdomain.com/path_finder.php`
+3. **Use the full path** shown in your cron job command
+4. **Delete the test file** after getting the path
+
+### Method 3: Alternative Cron Job Commands
+
+If the above doesn't work, try these alternatives:
+
+```bash
+# Option 1
+php /home/u123456789/domains/yourdomain.com/public_html/includes/auto_checkout_cron.php
+
+# Option 2
+/usr/local/bin/php /home/u123456789/domains/yourdomain.com/public_html/includes/auto_checkout_cron.php
+
+# Option 3 (if you have wget)
+wget -q -O - "http://yourdomain.com/includes/auto_checkout_cron.php"
+
+# Option 4 (using curl)
+curl -s "http://yourdomain.com/includes/auto_checkout_cron.php"
+```
+
+## Step 3: Test the System
+
+### Manual Testing:
+1. **Visit**: `http://yourdomain.com/includes/auto_checkout_cron.php`
+2. **Check if it runs** without errors
+3. **Check the admin dashboard** for activity logs
+
+### Verify Cron Job:
+1. **Wait for the scheduled time** (10:00 AM)
+2. **Check activity logs** in admin dashboard
+3. **Look for cron job logs** in Hostinger control panel
+
+## Step 4: Troubleshooting
+
+### Common Issues:
+
+1. **Permission Denied Error:**
+   - Set file permissions to 755: `chmod 755 includes/auto_checkout_cron.php`
+
+2. **PHP Path Not Found:**
+   - Try different PHP paths: `/usr/bin/php`, `/usr/local/bin/php`, `php`
+
+3. **Database Connection Error:**
+   - Check your `includes/config.php` file
+   - Verify database credentials
+
+4. **Cron Job Not Running:**
+   - Check Hostinger cron job logs
+   - Try the wget/curl method instead
+
+### Testing Commands:
+
+```bash
+# Test if PHP works
+/usr/bin/php -v
+
+# Test your script manually
+/usr/bin/php /full/path/to/includes/auto_checkout_cron.php
+```
+
+## Step 5: Verification
+
+1. **Check Admin Dashboard:**
+   - Auto checkout status should show "Enabled"
+   - Recent activities should appear after running
+
+2. **Check Database Tables:**
+   - `activity_logs` - Should have entries
+   - `auto_checkout_settings` - Should have settings
+   - `rooms` - Should have auto_checkout columns
+
+3. **Monitor Daily:**
+   - Check at 10:05 AM daily for new activity logs
+   - Verify rooms are automatically checked out
+
+## Important Notes:
+
+- **Hostinger Limitations**: Shared hosting may have restrictions on cron job frequency
+- **Time Zone**: Cron jobs run in server time zone (usually UTC)
+- **Backup**: Always backup your database before making changes
+- **Testing**: Test thoroughly before relying on automatic checkout
+
+## Support:
+
+If you encounter issues:
+1. Check Hostinger documentation for cron jobs
+2. Contact Hostinger support for server-specific help
+3. Check error logs in your hosting control panel

@@ -6,71 +6,34 @@
  */
 
 require_once 'config.php';
+require_once 'functions.php';
 
-class AutoCheckoutSystem {
-    private $conn;
-    
-    public function __construct($connection) {
-        $this->conn = $connection;
-    }
-    
-    public function processAutoCheckout() {
-        try {
-            // Get all occupied rooms that should be checked out
-            $query = "SELECT r.id as room_id, r.room_number, b.id as booking_id, b.guest_name, b.checkout_date
-                     FROM rooms r 
-                     JOIN bookings b ON r.id = b.room_id 
-                     WHERE r.status = 'occupied' 
-                     AND r.auto_checkout_enabled = TRUE
-                     AND b.status = 'active'
-                     AND b.checkout_date <= CURDATE()";
-            
-            $result = mysqli_query($this->conn, $query);
-            $processed_count = 0;
-            
-            while ($row = mysqli_fetch_assoc($result)) {
-                // Update room status to available
-                $update_room = "UPDATE rooms SET status = 'available' WHERE id = " . $row['room_id'];
-                mysqli_query($this->conn, $update_room);
-                
-                // Update booking status to completed
-                $update_booking = "UPDATE bookings SET status = 'completed', actual_checkout_date = NOW() 
-                                 WHERE id = " . $row['booking_id'];
-                mysqli_query($this->conn, $update_booking);
-                
-                // Log the activity
-                $log_activity = "INSERT INTO activity_logs (activity_type, room_id, guest_name, description) 
-                               VALUES ('auto_checkout', " . $row['room_id'] . ", '" . 
-                               mysqli_real_escape_string($this->conn, $row['guest_name']) . "', 
-                               'Automatic checkout completed for room " . $row['room_number'] . " - Guest: " . 
-                               mysqli_real_escape_string($this->conn, $row['guest_name']) . "')";
-                mysqli_query($this->conn, $log_activity);
-                
-                $processed_count++;
-            }
-            
-            // Update last run date
-            $update_settings = "UPDATE auto_checkout_settings SET last_run_date = CURDATE()";
-            mysqli_query($this->conn, $update_settings);
-            
-            // Log the overall process
-            $overall_log = "INSERT INTO activity_logs (activity_type, description) 
-                           VALUES ('auto_checkout_process', 'Auto checkout process completed. Processed " . 
-                           $processed_count . " rooms.')";
-            mysqli_query($this->conn, $overall_log);
-            
-            echo "Auto checkout process completed. Processed: " . $processed_count . " rooms.\n";
-            
-        } catch (Exception $e) {
-            error_log("Auto checkout error: " . $e->getMessage());
-            echo "Error during auto checkout: " . $e->getMessage() . "\n";
-        }
-    }
-}
+// Check if this is being run from command line or web
+$is_cli = php_sapi_name() === 'cli';
 
 // Execute auto checkout
-$autoCheckout = new AutoCheckoutSystem($conn);
-$autoCheckout->processAutoCheckout();
+$result = processAutoCheckout($conn);
+
+if ($result['success']) {
+    $message = "Auto checkout process completed. Processed: " . $result['processed'] . " rooms.";
+    if ($is_cli) {
+        echo $message . "\n";
+    } else {
+        echo "<h2>Auto Checkout Process</h2>";
+        echo "<p style='color: green;'>" . htmlspecialchars($message) . "</p>";
+        echo "<p><a href='../admin/dashboard.php'>Back to Dashboard</a></p>";
+    }
+} else {
+    $error_message = "Error during auto checkout: " . $result['error'];
+    if ($is_cli) {
+        echo $error_message . "\n";
+    } else {
+        echo "<h2>Auto Checkout Process</h2>";
+        echo "<p style='color: red;'>" . htmlspecialchars($error_message) . "</p>";
+        echo "<p><a href='../admin/dashboard.php'>Back to Dashboard</a></p>";
+    }
+    error_log($error_message);
+}
 
 mysqli_close($conn);
 ?>
