@@ -1,0 +1,76 @@
+# Auto Checkout System Setup Instructions
+
+## For Hostinger or cPanel Hosting:
+
+1. **Database Setup:**
+   - Import the `database/auto_checkout.sql` file into your MySQL database
+   - This will create the necessary tables and stored procedures
+
+2. **Cron Job Setup (Method 1 - Recommended):**
+   - Login to your cPanel
+   - Go to "Cron Jobs" section
+   - Add a new cron job with the following settings:
+     - Minute: 0
+     - Hour: 10
+     - Day: *
+     - Month: *
+     - Weekday: *
+     - Command: /usr/bin/php /home/yourusername/public_html/includes/auto_checkout_cron.php
+   
+   Replace "yourusername" with your actual hosting username and adjust the path accordingly.
+
+3. **Alternative Method (MySQL Event Scheduler):**
+   - If your hosting provider supports MySQL Event Scheduler, the SQL file will automatically create the event
+   - Check with your hosting provider if Event Scheduler is enabled
+   - You can verify by running: SHOW VARIABLES LIKE 'event_scheduler';
+
+4. **Manual Testing:**
+   - You can manually test the auto checkout by visiting:
+     http://yourdomain.com/includes/auto_checkout_cron.php
+   - This will process any rooms that should be checked out
+
+## For VPS or Dedicated Servers:
+
+1. **Setup Cron Job:**
+   ```bash
+   crontab -e
+   ```
+   
+   Add this line:
+   ```
+   0 10 * * * /usr/bin/php /path/to/your/project/includes/auto_checkout_cron.php
+   ```
+
+2. **Enable MySQL Event Scheduler:**
+   ```sql
+   SET GLOBAL event_scheduler = ON;
+   ```
+
+## Verification:
+
+1. Check the `activity_logs` table for auto checkout activities
+2. Monitor the `auto_checkout_settings` table for last run date
+3. Verify that rooms are automatically marked as available after checkout time
+
+## Troubleshooting:
+
+1. **Cron job not running:**
+   - Check cPanel cron job logs
+   - Verify PHP path is correct
+   - Ensure file permissions are set correctly (755)
+
+2. **Database errors:**
+   - Check MySQL error logs
+   - Verify database connection in config.php
+   - Ensure all tables are created properly
+
+3. **Event Scheduler not working:**
+   - Contact hosting provider to enable Event Scheduler
+   - Use cron job method instead
+
+## Important Notes:
+
+- The system will only checkout rooms where checkout_date <= current date
+- Rooms must have auto_checkout_enabled = TRUE
+- All activities are logged in the activity_logs table
+- The system updates room status to 'available' and booking status to 'completed'
